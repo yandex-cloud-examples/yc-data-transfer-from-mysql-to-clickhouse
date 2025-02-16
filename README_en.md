@@ -1,0 +1,3 @@
+# Uploading data from Yandex Managed Service for MySQL to a Yandex Managed Service for ClickHouse® data mart through Yandex Data Transfer
+
+With [Data Transfer](https://yandex.cloud/en/docs/data-transfer), you can transfer data from a [Managed Service for MySQL](https://yandex.cloud/en/docs/managed-mysql) cluster to a [Managed Service for ClickHouse®](https://yandex.cloud/en/docs/managed-clickhouse) one. See [this tutorial](https://yandex.cloud/en/docs/data-transfer/tutorials/mysql-to-clickhouse) to learn how to set up the solution with Terraform. This repository contains the configuration file you will need: [data-transfer-mmy-mch.tf](data-transfer-mmy-mch.tf).

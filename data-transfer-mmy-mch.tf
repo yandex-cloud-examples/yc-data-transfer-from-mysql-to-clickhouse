@@ -12,6 +12,7 @@ locals {
   source_password      = ""    # Set the source cluster password.
 
   # Target database settings:
+  target_db_name  = "" # Set the target cluster database name.
   target_user     = "" # Set the username for ClickHouse database.
   target_password = "" # Set the user password for ClickHouse database.
 
@@ -175,16 +176,24 @@ resource "yandex_mdb_clickhouse_cluster" "clickhouse-cluster" {
     subnet_id = yandex_vpc_subnet.subnet-d.id
   }
 
-  database {
-    name = local.source_db_name
+  lifecycle {
+    ignore_changes = [database, user]
   }
+}
 
-  user {
-    name     = local.target_user
-    password = local.target_password
-    permission {
-      database_name = local.source_db_name
-    }
+resource "yandex_mdb_clickhouse_database" "target-db" {
+  cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
+  name       = local.target_db_name
+}
+
+resource "yandex_mdb_clickhouse_user" "target-user" {
+  cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
+  name       = local.target_user
+  password   = local.target_password
+  permission {
+    database_name = yandex_mdb_clickhouse_database.target-db.name
+  }
+  settings {
   }
 }
 
@@ -213,7 +222,7 @@ resource "yandex_datatransfer_endpoint" "mch-target" {
       connection {
         connection_options {
           mdb_cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
-          database       = local.source_db_name
+          database       = local.target_db_name
           user           = local.target_user
           password {
             raw = local.target_password

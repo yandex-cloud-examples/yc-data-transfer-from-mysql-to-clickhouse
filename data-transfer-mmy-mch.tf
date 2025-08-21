@@ -40,10 +40,10 @@ resource "yandex_vpc_subnet" "subnet-b" {
   v4_cidr_blocks = ["10.2.0.0/16"]
 }
 
-resource "yandex_vpc_subnet" "subnet-c" {
-  description    = "Subnet in the ru-central1-c availability zone"
-  name           = "subnet-c"
-  zone           = "ru-central1-c"
+resource "yandex_vpc_subnet" "subnet-d" {
+  description    = "Subnet in the ru-central1-d availability zone"
+  name           = "subnet-d"
+  zone           = "ru-central1-d"
   network_id     = yandex_vpc_network.network.id
   v4_cidr_blocks = ["10.3.0.0/16"]
 }
@@ -171,8 +171,8 @@ resource "yandex_mdb_clickhouse_cluster" "clickhouse-cluster" {
 
   host {
     type      = "ZOOKEEPER"
-    zone      = "ru-central1-c"
-    subnet_id = yandex_vpc_subnet.subnet-c.id
+    zone      = "ru-central1-d"
+    subnet_id = yandex_vpc_subnet.subnet-d.id
   }
 
   database {

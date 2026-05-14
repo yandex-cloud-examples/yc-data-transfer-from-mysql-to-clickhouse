@@ -121,73 +121,81 @@ resource "yandex_mdb_mysql_user" "source-user" {
   global_permissions = ["REPLICATION_CLIENT", "REPLICATION_SLAVE"]
 }
 
-resource "yandex_mdb_clickhouse_cluster" "clickhouse-cluster" {
+resource "yandex_mdb_clickhouse_cluster_v2" "clickhouse-cluster" {
   description        = "Managed Service for ClickHouse cluster"
   name               = "clickhouse-cluster"
   environment        = "PRODUCTION"
   network_id         = yandex_vpc_network.network.id
   security_group_ids = [yandex_vpc_security_group.security-group.id]
 
-  clickhouse {
-    resources {
+  clickhouse = {
+    resources = {
       resource_preset_id = "s2.micro" # 2 vCPU, 8 GB RAM
       disk_type_id       = "network-ssd"
       disk_size          = 10 # GB
     }
   }
 
-  host {
-    type             = "CLICKHOUSE"
-    zone             = "ru-central1-a"
-    subnet_id        = yandex_vpc_subnet.subnet-a.id
-    assign_public_ip = true # Required for connection from the Internet
-  }
-
-  host {
-    type             = "CLICKHOUSE"
-    zone             = "ru-central1-b"
-    subnet_id        = yandex_vpc_subnet.subnet-b.id
-    assign_public_ip = true # Required for connection from the Internet
-  }
-
-  zookeeper {
-    resources {
+  zookeeper = {
+    resources = {
       resource_preset_id = "s2.micro"
       disk_type_id       = "network-ssd"
       disk_size          = 10
     }
   }
 
-  host {
-    type      = "ZOOKEEPER"
-    zone      = "ru-central1-a"
-    subnet_id = yandex_vpc_subnet.subnet-a.id
+  hosts = {
+    "ch-host1" = {
+      type             = "CLICKHOUSE"
+      zone             = "ru-central1-a"
+      subnet_id        = yandex_vpc_subnet.subnet-a.id
+      assign_public_ip = true # Required for connection from the Internet
+      shard_name       = "shard1"
+    }
+
+    "ch-host2" = {
+      type             = "CLICKHOUSE"
+      zone             = "ru-central1-b"
+      subnet_id        = yandex_vpc_subnet.subnet-b.id
+      assign_public_ip = true # Required for connection from the Internet
+      shard_name       = "shard1"
+    }
+
+    "zk-host1" = {
+      type      = "ZOOKEEPER"
+      zone      = "ru-central1-a"
+      subnet_id = yandex_vpc_subnet.subnet-a.id
+    }
+
+    "zk-host2" = {
+      type      = "ZOOKEEPER"
+      zone      = "ru-central1-b"
+      subnet_id = yandex_vpc_subnet.subnet-b.id
+    }
+
+    "zk-host3" = {
+      type      = "ZOOKEEPER"
+      zone      = "ru-central1-d"
+      subnet_id = yandex_vpc_subnet.subnet-d.id
+    }
   }
 
-  host {
-    type      = "ZOOKEEPER"
-    zone      = "ru-central1-b"
-    subnet_id = yandex_vpc_subnet.subnet-b.id
+  shards = {
+    "shard1" = {}
   }
 
-  host {
-    type      = "ZOOKEEPER"
-    zone      = "ru-central1-d"
-    subnet_id = yandex_vpc_subnet.subnet-d.id
-  }
-
-  lifecycle {
-    ignore_changes = [database, user]
+  maintenance_window {
+    type = "ANYTIME"
   }
 }
 
 resource "yandex_mdb_clickhouse_database" "target-db" {
-  cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
+  cluster_id = yandex_mdb_clickhouse_cluster_v2.clickhouse-cluster.id
   name       = local.target_db_name
 }
 
 resource "yandex_mdb_clickhouse_user" "target-user" {
-  cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
+  cluster_id = yandex_mdb_clickhouse_cluster_v2.clickhouse-cluster.id
   name       = local.target_user
   password   = local.target_password
   permission {
@@ -221,7 +229,7 @@ resource "yandex_datatransfer_endpoint" "mch-target" {
     clickhouse_target {
       connection {
         connection_options {
-          mdb_cluster_id = yandex_mdb_clickhouse_cluster.clickhouse-cluster.id
+          mdb_cluster_id = yandex_mdb_clickhouse_cluster_v2.clickhouse-cluster.id
           database       = local.target_db_name
           user           = local.target_user
           password {
